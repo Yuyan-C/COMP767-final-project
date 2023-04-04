@@ -23,23 +23,22 @@ class ENSO_Dataset(torch.utils.data.Dataset):
         return self.X.shape[0]
 
 
-def to_dataloaders(dataset, y, batch_size, valid_split=0, validation='SODA', verbose=True,
-                   concat_cmip5_and_soda=True, shuffle_training=True):
+def to_dataloaders(paths, batch_size, verbose=True, shuffle_training=True):
     """
      n - length of time series (i.e. dataset size)
      m - number of nodes/grid cells (33 if using exactly the ONI region)
     """
 
-    trainX = dataset[:700]
-    trainY = y[:700]
+    trainX = np.load(paths[0])
+    trainY = np.load(paths[1])
 
-    validX = dataset[700:800]
-    validY = y[700:800]
+    validX = np.load(paths[2])
+    validY = np.load(paths[3])
 
-    testX = dataset[800:]
-    testY = y[800:]
+    testX = np.load(paths[4])
+    testY = np.load(paths[5])
 
-    print("trainY", trainY.shape)
+
     trainset = ENSO_Dataset(trainX, trainY)
     valset = ENSO_Dataset(validX, validY)
     testset = ENSO_Dataset(testX, testY)

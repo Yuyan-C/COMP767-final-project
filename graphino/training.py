@@ -66,11 +66,9 @@ def evaluate(dataloader, model, device, return_preds=False):
         return total_loss_l2 / i, oni_stats
 
 
-def get_static_feats(params, net_params, coordinates, trainset):
-    max_lat = max(params['lat_max'], params['lat_min'])
-    static_feats = np.array([
-        [lat / max_lat, (lon - 180) / 360] for lat, lon in coordinates
-    ])  # (#nodes, 2) = (#nodes (lat, lon))
+def get_static_feats(dataset):
+    static_feats = dataset[:25, 0, 0, :].squeeze()
+
     return static_feats
 
 
@@ -82,17 +80,17 @@ def get_dataloaders(params, net_params):
         'data_dir': params['data_dir'], 'use_heat_content': params['use_heat_content'],
         'add_index_node': net_params['index_node']
     }
-    dataset = np.load("Data/Seasfire/dataset.npy")
-    y = np.load("Data/Seasfire/y.npy")
-    cords = np.load("Data/Seasfire/cords.npy")
-    net_params['num_nodes'] = dataset.shape[3]
+
+    paths = ["Data/Seasfire/X_train.npy", "Data/Seasfire/y_train.npy", "Data/Seasfire/X_val.npy", "Data/Seasfire/y_val.npy",
+             "Data/Seasfire/X_test.npy", "Data/Seasfire/y_test.npy"]
+    dataset = np.load("Data/Seasfire/X_val.npy")
+    net_params['num_nodes'] = 25
     adj = None
-    static_feats = get_static_feats(params, net_params, cords, dataset)
+    static_feats = get_static_feats(dataset)
+    cords=[]
 
     trainloader, valloader, testloader = \
-        to_dataloaders(dataset,y, batch_size=params['batch_size'],
-                       valid_split=params['validation_frac'], concat_cmip5_and_soda=True,
-                       shuffle_training=params['shuffle'], validation=params['validation_set'])
+        to_dataloaders(paths, batch_size=params['batch_size'], shuffle_training=params['shuffle'])
 
 
     return (adj, static_feats, cords), (trainloader, valloader, testloader)

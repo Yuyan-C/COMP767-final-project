@@ -33,7 +33,6 @@ class EdgeStructureLearner(nn.Module):
     def forward(self):
         nodevec1 = torch.tanh(self.alpha1 * self.lin1(self.static_feat))
         nodevec2 = torch.tanh(self.alpha1 * self.lin2(self.static_feat))
-
         adj = torch.sigmoid(self.alpha2 * nodevec1 @ nodevec2.T)
         adj = adj.flatten()
         # mask = torch.zeros(self.num_nodes * self.num_nodes).to(self.device)
