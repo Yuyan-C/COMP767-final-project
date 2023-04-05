@@ -28,10 +28,12 @@ def get_data_cube(ds, latitude, longitude):
 
 
 #
-# X, y = prepare_dataset(minx=16.125, miny=0.125, maxx=20.875, maxy=2.875, data_path='seasfire.zarr')
-#
-# np.save("forest_X.npy", X)
-# np.save("forest_y.npy", y)
+X, y = prepare_dataset(minx=16.125, miny=0.125, maxx=20.875, maxy=2.875, data_path='seasfire.zarr')
+
+np.save("forest_X.npy", X)
+np.save("forest_y.npy", y)
+
+print(X.shape)
 
 
 # X = np.load("forest_X.npy")

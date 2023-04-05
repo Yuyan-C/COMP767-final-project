@@ -38,7 +38,6 @@ def to_dataloaders(paths, batch_size, verbose=True, shuffle_training=True):
     testX = np.load(paths[4])
     testY = np.load(paths[5])
 
-
     trainset = ENSO_Dataset(trainX, trainY)
     valset = ENSO_Dataset(validX, validY)
     testset = ENSO_Dataset(testX, testY)
