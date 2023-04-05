@@ -10,10 +10,16 @@ def prepare_dataset(minx, miny, maxx, maxy, data_path):
     features_to_keep = ['lst_day', 'ndvi', 'rel_hum', 'ssrd', 't2m_min', 'tp', 'vpd']
     padded = padded[features_to_keep]
     lat, lon, _ = region.indexes.values()
-    lat_padded, lon_padded, _ = padded.indexes.values()
-    y = region["fcci_ba"]
+    y = region["fcci_ba"][:920, :, :] # get rid of nan
+
+    # fill nan for X
+    values = {"lst_day": 300, "ndvi": 0.7}
+    padded = padded.fillna(value=values)
+
+    # get neighborhood
     X = [get_data_cube(padded, i, j) for i in lat for j in lon]
     X = np.array(X)
+    X = X[:, :, :920, :, :]
     ds.close()
     return X, y
 
@@ -28,20 +34,16 @@ def get_data_cube(ds, latitude, longitude):
 
 
 #
-X, y = prepare_dataset(minx=16.125, miny=0.125, maxx=20.875, maxy=2.875, data_path='seasfire.zarr')
-
-np.save("forest_X.npy", X)
-np.save("forest_y.npy", y)
-
-print(X.shape)
+# X, y = prepare_dataset(minx=16.125, miny=0.125, maxx=20.875, maxy=2.875, data_path='seasfire.zarr')
+# np.save("newX.npy", X)
+# np.save("newY.npy", y)
 
 
-# X = np.load("forest_X.npy")
-# y = np.load("forest_y.npy")
-# y = y[:920, :]
-# X = X[:, :, :920, :, :]
-# X = X.reshape((X.shape[0], X.shape[2], X.shape[1], -1))
-# y = y.reshape((y.shape[0], -1)).T
+X = np.load("newX.npy")
+y = np.load("newY.npy")
+
+
+# print(y.shape)
 
 
 def reshape_dataset(X_new, y_new):
@@ -50,14 +52,16 @@ def reshape_dataset(X_new, y_new):
     return X_new, y_new
 
 
-def stack_months(months=3):
-    X, y = prepare_dataset(minx=16.125, miny=0.125, maxx=20.875, maxy=2.875, data_path='seasfire.zarr')
-    y = y[:920, :]
-    X = X[:, :, :920, :, :]
-    X = X.reshape((X.shape[0], X.shape[2], X.shape[1], -1))
-    y = y.reshape((y.shape[0], -1)).T
-    X_new = np.array([np.stack([patch[i - months:i] for i in range(months, len(patch))]) for patch in X])
+
+def stack_weeks(X, y, weeks=3):
+    X = X.reshape((X.shape[0], X.shape[2], X.shape[1], -1)) # (240, 920, 7, 25)
+    y = y.reshape((y.shape[0], -1))
+    y = y.T # shape: (240, 920)
+
+    X_new = np.array([np.stack([patch[i - weeks:i] for i in range(weeks, len(patch))]) for patch in X])
     y_new = y[:, 3:]
+
+    # shape (240, 917, 3, 7, 25) (240, 917)
 
     X_train = X_new[:, :644, :, :]
     y_train = y_new[:, :644]
@@ -74,7 +78,7 @@ def stack_months(months=3):
 
     return X_train, y_train, X_val, y_val, X_test, y_test
 
-data = stack_months(months=3)
+data = stack_weeks(X, y, weeks=3)
 fns = ["X_train", "y_train", "X_val", "y_val", "X_test", "y_test"]
 for i in range(6):
     np.save(f"{fns[i]}.npy", data[i])
