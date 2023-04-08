@@ -26,7 +26,7 @@
 
     "net_params": {
         "L": 2,
-        "num_nodes": 1,
+        "num_nodes": 25,
         "readout": "mean",
         "activation": "ELU",
         "avg_edges_per_node": 4,
