@@ -72,11 +72,11 @@ if __name__ == '__main__':
 
         # Train model
         t_total = time.time()
-        # model = model.to(device)
+        model = model.to(device)
         val_stats = None
         best_val_loss = cur_val = 1000
-        # print('Params', params)
-        # print('Net params', net_params)
+        print('Params', params)
+        print('Net params', net_params)
         with tqdm(range(1, params['epochs'] + 1)) as t:
             for epoch in t:
                 t.set_description(f'Graphino-{args.horizon}h-{config_file}')

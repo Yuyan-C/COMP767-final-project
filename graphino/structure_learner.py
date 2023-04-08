@@ -18,8 +18,7 @@ class EdgeStructureLearner(nn.Module):
         self.lin2 = nn.Linear(xd, dim)
 
         self.static_feat = static_feat if isinstance(static_feat, torch.Tensor) else torch.from_numpy(static_feat)
-        # self.static_feat = self.static_feat.float().to(device)
-        self.static_feat = self.static_feat.float()
+        self.static_feat = self.static_feat.float().to(device)
 
         self.device = device
         self.dim = dim
@@ -27,16 +26,14 @@ class EdgeStructureLearner(nn.Module):
         self.alpha2 = alpha2
         self.num_edges = max_num_edges
         self.self_loops = self_loops
-        # self.diag = torch.eye(self.num_nodes).bool().to(device)
-        self.diag = torch.eye(self.num_nodes).bool()
+        self.diag = torch.eye(self.num_nodes).bool().to(device)
 
     def forward(self):
         nodevec1 = torch.tanh(self.alpha1 * self.lin1(self.static_feat))
         nodevec2 = torch.tanh(self.alpha1 * self.lin2(self.static_feat))
         adj = torch.sigmoid(self.alpha2 * nodevec1 @ nodevec2.T)
         adj = adj.flatten()
-        # mask = torch.zeros(self.num_nodes * self.num_nodes).to(self.device)
-        mask = torch.zeros(self.num_nodes * self.num_nodes)
+        mask = torch.zeros(self.num_nodes * self.num_nodes).to(self.device)
         _, strongest_idxs = torch.topk(adj, self.num_edges)  # Adj to get the strongest weight value indices
         mask[strongest_idxs] = 1
         adj = adj * mask

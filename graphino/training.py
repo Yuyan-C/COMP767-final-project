@@ -20,7 +20,7 @@ def train_epoch(dataloader, model, criterion, optims, device, epoch, nth_step=10
     model.train()
     total_loss = 0
     for iter, (X, Y) in enumerate(dataloader, 1):
-        # X, Y = X.to(device), Y.to(device)
+        X, Y = X.to(device), Y.to(device)
         for optim in optims:
             optim.zero_grad()
         X = X.reshape((X.shape[0], -1, X.shape[3])).transpose(1, 2)  # shape = (batch_size x #features x #nodes)
@@ -43,7 +43,7 @@ def evaluate(dataloader, model, device, return_preds=False):
     Ytrue = None
     for i, (X, Y) in enumerate(dataloader, 1):
         assert len(X.size()) == 4, "Expected X to have shape (batch_size, #channels, window, #nodes)"
-        # X, Y = X.to(device), Y.to(device)
+        X, Y = X.to(device), Y.to(device)
         X = X.reshape((X.shape[0], -1, X.shape[3])).transpose(1, 2)
         with torch.no_grad():
             output = model(X)
