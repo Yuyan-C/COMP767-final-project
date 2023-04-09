@@ -12,53 +12,16 @@ from sklearn.metrics import mean_squared_error
 def reload_all(model_dir, ens_dict, checkpoint_IDs=None, device='cuda', data_dir='./Data/'):
     from graphino.GCN.GCN_model import GCN
     from graphino.training import evaluate, get_dataloaders
-    if checkpoint_IDs is None:
-        checkpoint_IDs = ['last']
-
-    if os.path.isfile(os.path.join(model_dir, 'last_model.pkl')):
-        mdl_file = os.path.join(model_dir, 'last_model.pkl')
-    else:
-        mdl_file = os.path.join(model_dir, '50ep_model.pkl')
-
-    try:
-        model_dict = torch.load(mdl_file, map_location=device)
-    except FileNotFoundError as e:
-        print(e)
-        return None, ens_dict
-
+    mdl_file = os.path.join(model_dir, 'last_model.pkl')
+    model_dict = torch.load(mdl_file, map_location=device)
     params, net_params = model_dict['metadata']['params'], model_dict['metadata']['net_params']
     params['data_dir'] = data_dir
     print(net_params)
-
     (adj, static_feats, _), (_, valloader, testloader) = get_dataloaders(params, net_params)
     model = GCN(net_params, static_feat=static_feats, adj=adj, verbose=False, device=device)
-    Y = None
-    for ckpt in checkpoint_IDs:
-        try:
-            model_dict = torch.load(os.path.join(model_dir, f'{ckpt}_model.pkl'), map_location=device)
-        except FileNotFoundError as e:
-            print(e)
-            continue
-        try:
-            model.load_state_dict(model_dict['model'])
-        except RuntimeError as e:
-            print(e)
-            continue
-
-        model.eval()
-        model.to(device)
-
-        _, stats = evaluate(valloader, model, device, return_preds=False)
-        _, test_stats, Y, preds = evaluate(testloader, model, device, return_preds=True)
-        print(model_dir.split('/')[-1], ckpt, "Val. rmse=", stats['rmse'],
-              'TEST:', test_stats['rmse'], "Corrcoef, all-season-corrcoef =", test_stats['corrcoef'], test_stats['all_season_cc'])
-        if stats['rmse'] > ens_dict[ckpt][-1][0]:
-            print("Skip this one")
-            continue
-        ens_dict[ckpt][-1] = (stats['rmse'], preds)
-        ens_dict[ckpt] = sorted(ens_dict[ckpt], key=lambda tup: tup[0])
-
-    return Y, ens_dict
+    model.load_state_dict(model_dict['model'])
+    model.eval()
+    return preds
 
 
 def ensemble_performance(out_dir, verbose=True, device="cuda", num_members=4, checkpoint_IDs=None, ID=None, data_dir='./Data/'):
@@ -83,7 +46,7 @@ def ensemble_performance(out_dir, verbose=True, device="cuda", num_members=4, ch
             print('Skipping this one')
             continue
         mdl_dir = os.path.join(config_dir, fileID)
-        Y, topK = reload_all(mdl_dir, topK, device=device, checkpoint_IDs=checkpoint_IDs, data_dir=data_dir)
+        Y, topK = reload_all("out/", topK, device=device, checkpoint_IDs=checkpoint_IDs, data_dir=data_dir)
         if Y is not None:
             Ytrue = Y
         added = True
@@ -147,6 +110,10 @@ def ensemble(Ytrue, *args, return_preds=False, **kwargs):
 
 # %%
 
+def reload(path):
+    model_dict = torch.load(path, map_location='cpu')
+
+
 if __name__ == '__main__':
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     print("Torch uses CUDA?", torch.cuda.is_available())
@@ -158,14 +125,10 @@ if __name__ == '__main__':
     parser.add_argument("--gpu_id", default=2, type=int)
     parser.add_argument("--horizon", default=6, type=int)  # number of lead months
     parser.add_argument("--type", default='50ep', type=str)
-    parser.add_argument("--data_dir", default='./Data/', type=str)
+    parser.add_argument("--data_dir", default='./Data/Seasfire', type=str)
     args = parser.parse_args()
     set_gpu(args.gpu_id)
 
-    out = f'out/{args.horizon}lead/'
-    checkpoint = [args.type]
-    ens_members, Y = ensemble_performance(
-        out, verbose=True, num_members=4,
-        device=device,
-        checkpoint_IDs=checkpoint, ID=args.ID, data_dir=args.data_dir
-    )
+    out = f'out/'
+    y = reload_all("out/", "", checkpoint_IDs=None, device='cpu', data_dir='./Data/')
+    print(y)
