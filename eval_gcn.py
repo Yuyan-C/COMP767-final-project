@@ -21,6 +21,7 @@ def reload_all(model_dir, ens_dict, checkpoint_IDs=None, device='cuda', data_dir
     model = GCN(net_params, static_feat=static_feats, adj=adj, verbose=False, device=device)
     model.load_state_dict(model_dict['model'])
     model.eval()
+    _, test_stats, Y, preds = evaluate(testloader, model, device, return_preds=True)
     return preds
 
 
@@ -131,4 +132,4 @@ if __name__ == '__main__':
 
     out = f'out/'
     y = reload_all("out/", "", checkpoint_IDs=None, device='cpu', data_dir='./Data/')
-    print(y)
+    print(y.shape)
